@@ -850,12 +850,14 @@ ezxml_t ezxml_new(const char *name)
     static char *ent[] = { "lt;", "&#60;", "gt;", "&#62;", "quot;", "&#34;",
                            "apos;", "&#39;", "amp;", "&#38;", NULL };
     ezxml_root_t root;
+    char **p_ent;
     if (!(root  = malloc(sizeof(struct ezxml_root)))) return NULL;  // bug#21
+    if (!(p_ent = malloc(sizeof(ent)))) { free(root); return NULL; }; // bug#22 CVE-2021-26222
     root = (ezxml_root_t)memset(root, '\0', sizeof(struct ezxml_root));
     root->xml.name = (char *)name;
     root->cur = &root->xml;
     strcpy(root->err, root->xml.txt = "");
-    root->ent = memcpy(malloc(sizeof(ent)), ent, sizeof(ent));
+    root->ent = memcpy(p_ent, ent, sizeof(ent));
     root->attr = root->pi = (char ***)(root->xml.attr = EZXML_NIL);
     return &root->xml;
 }
