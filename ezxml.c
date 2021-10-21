@@ -482,6 +482,7 @@ ezxml_t ezxml_parse_str(char *s, size_t len)
     char q, e, *d, **attr, **a = NULL; // initialize a to avoid compile warning
     int l, i, j;
 
+    if (!root) return NULL; // bug#21 / CVE-2021-26221
     root->m = s;
     if (! len) return ezxml_err(root, NULL, "root tag missing");
     root->u = ezxml_str2utf8(&s, &len); // convert utf-16 to utf-8
@@ -624,7 +625,7 @@ ezxml_t ezxml_parse_fp(FILE *fp)
     } while (s && l == EZXML_BUFSIZE);
 
     if (! s) return NULL;
-    root = (ezxml_root_t)ezxml_parse_str(s, len);
+    if (!(root = (ezxml_root_t)ezxml_parse_str(s, len))) { free(s); return NULL; }; // bug#21
     root->len = -1; // so we know to free s in ezxml_free()
     return &root->xml;
 }
@@ -648,12 +649,14 @@ ezxml_t ezxml_parse_fd(int fd)
         MAP_FAILED) {
         madvise(m, l, MADV_SEQUENTIAL); // optimize for sequential access
         root = (ezxml_root_t)ezxml_parse_str(m, st.st_size);
+        if (!root) { munmap(m,l); return NULL; }; // bug#21
         madvise(m, root->len = l, MADV_NORMAL); // put it back to normal
     }
     else { // mmap failed, read file into memory
 #endif // EZXML_NOMMAP
         l = read(fd, m = malloc(st.st_size), st.st_size);
         root = (ezxml_root_t)ezxml_parse_str(m, l);
+        if (!root) { free(m); return NULL; };
         root->len = -1; // so we know to free s in ezxml_free()
 #ifndef EZXML_NOMMAP
     }
@@ -846,8 +849,9 @@ ezxml_t ezxml_new(const char *name)
 {
     static char *ent[] = { "lt;", "&#60;", "gt;", "&#62;", "quot;", "&#34;",
                            "apos;", "&#39;", "amp;", "&#38;", NULL };
-    ezxml_root_t root = (ezxml_root_t)memset(malloc(sizeof(struct ezxml_root)), 
-                                             '\0', sizeof(struct ezxml_root));
+    ezxml_root_t root;
+    if (!(root  = malloc(sizeof(struct ezxml_root)))) return NULL;  // bug#21
+    root = (ezxml_root_t)memset(root, '\0', sizeof(struct ezxml_root));
     root->xml.name = (char *)name;
     root->cur = &root->xml;
     strcpy(root->err, root->xml.txt = "");
