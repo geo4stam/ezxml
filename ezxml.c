@@ -361,7 +361,7 @@ short ezxml_internal_dtd(ezxml_root_t root, char *s, size_t len)
             if (! *t) { ezxml_err(root, t, "unclosed <!ATTLIST"); break; }
             if (*(s = t + strcspn(t, EZXML_WS ">")) == '>') continue;
             else *s = '\0'; // null terminate tag name
-            for (i = 0; root->attr[i] && strcmp(n, root->attr[i][0]); i++);
+            for (i = 0; n && root->attr[i] && strcmp(n, root->attr[i][0]); i++);
 
             while (*(n = ++s + strspn(s, EZXML_WS)) && *n != '>') {
                 if (*(s = n + strcspn(n, EZXML_WS))) *s = '\0'; // attr name
