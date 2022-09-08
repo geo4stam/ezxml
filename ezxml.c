@@ -756,9 +756,11 @@ char *ezxml_toxml(ezxml_t xml)
     ezxml_t p = (xml) ? xml->parent : NULL, o = (xml) ? xml->ordered : NULL;
     ezxml_root_t root = (ezxml_root_t)xml;
     size_t len = 0, max = EZXML_BUFSIZE;
-    char *s = strcpy(malloc(max), ""), *t, *n;
+    char *s = malloc(max), *t, *n; // bug#23 / CVE-2021-26220
     int i, j, k;
 
+    if (!s) return (NULL);
+    s = strcpy(s, "");
     if (! xml || ! xml->name) return realloc(s, len + 1);
     while (root->xml.parent) root = (ezxml_root_t)root->xml.parent; // root tag
 
@@ -1015,8 +1017,12 @@ int main(int argc, char **argv)
     if (argc != 2) return fprintf(stderr, "usage: %s xmlfile\n", argv[0]);
 
     xml = ezxml_parse_file(argv[1]);
-    printf("%s\n", (s = ezxml_toxml(xml)));
-    free(s);
+    s = ezxml_toxml(xml);
+    if (s) {
+        printf("%s\n", s);
+        free(s);
+    } // bug#23
+    
     i = fprintf(stderr, "%s", ezxml_error(xml));
     ezxml_free(xml);
     return (i) ? 1 : 0;
