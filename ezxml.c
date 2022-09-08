@@ -579,7 +579,7 @@ ezxml_t ezxml_parse_str(char *s, size_t len)
             for (l = 0; *s && ((! l && *s != '>') || (l && (*s != ']' || 
                  *(s + strspn(s + 1, EZXML_WS) + 1) != '>')));
                  l = (*s == '[') ? 1 : l) s += strcspn(s + 1, "[]>") + 1;
-            if (! *s && e != '>')
+            if (! *s)
                 return ezxml_err(root, d, "unclosed <!DOCTYPE");
             d = (l) ? strchr(d, '[') + 1 : d;
             if (l && ! ezxml_internal_dtd(root, d, s++ - d)) return &root->xml;
